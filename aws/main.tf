@@ -269,6 +269,15 @@ resource "aws_network_interface" "public1" {
 }
 
 # Deploy BIG-IP
+
+data "template_file" "user_data" {
+    template = "${file("${path.module}/user_data.tpl")}"
+
+    vars {
+        admin_username = "${var.f5_user}"
+        admin_password = "${var.f5_password}"
+    }
+}
 resource "aws_instance" "f5_bigip_01" {
     instance_type = "${var.f5_instance_type}"
     ami = "${var.f5_ami}"
@@ -288,16 +297,18 @@ resource "aws_instance" "f5_bigip_01" {
         network_interface_id = "${aws_network_interface.public1.id}"
     }
 
-    provisioner "remote-exec" {
-        connection {
-            type = "ssh"
-            user = "admin"
-            private_key = "${file(var.private_key_path)}"
-        }
-        inline = [
-            "modify auth user ${var.f5_user} password ${var.f5_password}"
-        ]
-    }
+    user_data = "${data.template_file.user_data.rendered}"
+
+    # provisioner "remote-exec" {
+    #     connection {
+    #         type = "ssh"
+    #         user = "admin"
+    #         private_key = "${file(var.private_key_path)}"
+    #     }
+    #     inline = [
+    #         "modify auth user ${var.f5_user} password ${var.f5_password}"
+    #     ]
+    # }
 }
 
 # Assign Elastic IPs
