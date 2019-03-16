@@ -52,6 +52,11 @@ resource "aws_iam_role_policy_attachment" "f5_ha_attach" {
     policy_arn = "${aws_iam_policy.f5_ha_policy.arn}"
 }
 
+resource "aws_iam_instance_profile" "f5_profile" {
+    name = "f5_profile"
+    role = "${aws_iam_role.f5_ha.name}"
+}
+
 # Create an AWS VPC
 resource "aws_vpc" "f5_demo_vpc" {
     cidr_block              = "${var.vpc_cidr}"
@@ -121,7 +126,7 @@ resource "aws_route_table" "f5_public_rt" {
     vpc_id = "${aws_vpc.f5_demo_vpc.id}"
 
     route {
-        cidr_block = "0.0.0/0"
+        cidr_block = "0.0.0.0/0"
         gateway_id = "${aws_internet_gateway.f5_internet_gateway.id}"
     }
 
@@ -138,5 +143,160 @@ resource "aws_default_route_table" "f5_private_rt" {
     }
 }
 
+resource "aws_route_table_association" "f5_mgmt1_assoc" {
+    subnet_id = "${aws_subnet.f5_mgmt1_subnet.id}"
+    route_table_id = "${aws_route_table.f5_public_rt.id}"
+}
+
+resource "aws_route_table_association" "f5_mgmt2_assoc" {
+    subnet_id = "${aws_subnet.f5_mgmt2_subnet.id}"
+    route_table_id = "${aws_route_table.f5_public_rt.id}"
+}
+
+resource "aws_route_table_association" "f5_public1_assoc" {
+    subnet_id = "${aws_subnet.f5_public1_subnet.id}"
+    route_table_id = "${aws_route_table.f5_public_rt.id}"
+}
+
+resource "aws_route_table_association" "f5_public2_assoc" {
+    subnet_id = "${aws_subnet.f5_public2_subnet.id}"
+    route_table_id = "${aws_route_table.f5_public_rt.id}"
+}
+
+# Get public IP address
+data "http" "myIP" {
+    url = "http://ipv4.icanhazip.com"
+}
+
 # Create Security Groups
+resource "aws_security_group" "f5_mgmt_sg" {
+    name = "f5_mgmt_sg"
+    description = "F5 BIG-IP Management Security Group"
+    vpc_id = "${aws_vpc.f5_demo_vpc.id}"
+
+    # MGMT UI
+    ingress {
+        from_port = 443
+        to_port = 443
+        protocol = "tcp"
+        cidr_blocks = ["${chomp(data.http.myIP.body)}/32"]
+    }
+
+    # SSH
+    ingress {
+        from_port = 22
+        to_port = 22
+        protocol = "tcp"
+        cidr_blocks = ["${chomp(data.http.myIP.body)}/32"]
+    }
+
+    # iQuery
+    ingress {
+        from_port = 4353
+        to_port = 4353
+        protocol = "tcp"
+        cidr_blocks = ["10.0.0.0/16"]
+    }
+
+    # mcpd
+    ingress {
+        from_port = 6699
+        to_port = 6699
+        protocol = "tcp"
+        cidr_blocks = ["10.0.0.0/16"]
+    }
+
+    # failover
+    ingress {
+        from_port = 1026
+        to_port = 1026
+        protocol = "udp"
+        cidr_blocks = ["10.0.0.0/16"]
+    }
+
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+resource "aws_security_group" "f5_public_sg" {
+    name = "f5_public_sg"
+    description = "F5 BIG-IP Public Security Group"
+    vpc_id = "${aws_vpc.f5_demo_vpc.id}"
+
+    # HTTP
+    ingress {
+        from_port = 80
+        to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    # HTTPS
+    ingress {
+        from_port = 443
+        to_port = 443
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+# build out EC2 instances 
+# add key pair
+resource "aws_key_pair" "f5_auth" {
+    key_name = "${var.key_name}"
+    public_key = "${file(var.public_key_path)}"
+}
+
+# create network interface for public subnet
+resource "aws_network_interface" "mgmt1" {
+    subnet_id = "${aws_subnet.f5_mgmt1_subnet.id}"
+    security_groups = ["${aws_security_group.f5_mgmt_sg.id}"]
+}
+resource "aws_network_interface" "public1" {
+    subnet_id = "${aws_subnet.f5_public1_subnet.id}"
+    security_groups = ["${aws_security_group.f5_public_sg.id}"]
+}
+
+# Deploy BIG-IP
+resource "aws_instance" "f5_bigip_01" {
+    instance_type = "${var.f5_instance_type}"
+    ami = "${var.f5_ami}"
+
+    tags {
+        Name = "F5_BIGIP_01"
+    }
+
+    key_name = "${aws_key_pair.f5_auth.id}"
+    iam_instance_profile = "${aws_iam_instance_profile.f5_profile.id}"
+    network_interface = {
+        device_index = 0
+        network_interface_id = "${aws_network_interface.mgmt1.id}"
+    }
+    network_interface = {
+        device_index = 1
+        network_interface_id = "${aws_network_interface.public1.id}"
+    }
+}
+
+# Assign Elastic IPs
+resource "aws_eip" "mgmt1" {
+    vpc = true
+    network_interface = "${aws_network_interface.mgmt1.id}"
+}
+
+resource "aws_eip" "public1" {
+    vpc = true
+    network_interface = "${aws_network_interface.public1.id}"
+}
 
