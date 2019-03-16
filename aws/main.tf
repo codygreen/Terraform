@@ -287,6 +287,17 @@ resource "aws_instance" "f5_bigip_01" {
         device_index = 1
         network_interface_id = "${aws_network_interface.public1.id}"
     }
+
+    provisioner "remote-exec" {
+        connection {
+            type = "ssh"
+            user = "admin"
+            private_key = "${file(var.private_key_path)}"
+        }
+        inline = [
+            "modify auth user ${var.f5_user} password ${var.f5_password}"
+        ]
+    }
 }
 
 # Assign Elastic IPs
