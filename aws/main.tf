@@ -276,6 +276,8 @@ data "template_file" "user_data" {
     vars {
         admin_username = "${var.f5_user}"
         admin_password = "${var.f5_password}"
+        do_rpm_url = "${var.do_rpm_url}"
+        as3_rpm_url = "${var.as3_rpm_url}"
     }
 }
 resource "aws_instance" "f5_bigip_01" {
@@ -296,19 +298,11 @@ resource "aws_instance" "f5_bigip_01" {
         device_index = 1
         network_interface_id = "${aws_network_interface.public1.id}"
     }
+    root_block_device { 
+        delete_on_termination = true 
+    }
 
     user_data = "${data.template_file.user_data.rendered}"
-
-    # provisioner "remote-exec" {
-    #     connection {
-    #         type = "ssh"
-    #         user = "admin"
-    #         private_key = "${file(var.private_key_path)}"
-    #     }
-    #     inline = [
-    #         "modify auth user ${var.f5_user} password ${var.f5_password}"
-    #     ]
-    # }
 }
 
 # Assign Elastic IPs
@@ -321,4 +315,6 @@ resource "aws_eip" "public1" {
     vpc = true
     network_interface = "${aws_network_interface.public1.id}"
 }
+
+# Install Declarative Onboarding RPM
 
