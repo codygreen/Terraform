@@ -2,3 +2,8 @@ aws/.terraform
 terraform.tfvars
 terraform.tfstate
 terraform.tfstate.backup
+*/.terraform
+aws/big-ip/.terraform
+aws/compute/.terraform
+aws/iam/.terraform
+aws/networking/.terraform
