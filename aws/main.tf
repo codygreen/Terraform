@@ -23,6 +23,14 @@ module "iam" {
     source = "./iam"
 }
 
+# Deploy Compute Module
+module "compute" {
+  source = "./compute"
+  security_group = "${module.networking.security_group}"
+  subnet = "${module.networking.public_subnets}"
+  vpc = "${module.networking.vpc}"
+}
+
 # Deploy BIG-IP Module
 module "big-ip" {
     source = "./big-ip"
@@ -37,12 +45,6 @@ module "big-ip" {
     subnets = "${module.networking.public_subnets}"
     f5_profile = "${module.iam.f5_profile}"
     security_group = "${module.networking.security_group}"
+    workload_ips = "${module.compute.private_ip}"
 }
 
-# Deploy Compute Module
-module "compute" {
-  source = "./compute"
-  security_group = "${module.networking.security_group}"
-  subnet = "${module.networking.public_subnets}"
-  vpc = "${module.networking.vpc}"
-}

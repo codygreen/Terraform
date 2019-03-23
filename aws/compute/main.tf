@@ -43,3 +43,7 @@ resource "aws_ecs_service" "f5-demo" {
     assign_public_ip = true
   }
 }
+
+data "external" "private_ip" {
+    program = ["bash", "${path.module}/get_ecs_ips.sh"]
+}
