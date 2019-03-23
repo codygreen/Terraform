@@ -54,3 +54,50 @@ resource "aws_instance" "f5_bigip" {
 
     user_data = "${data.template_file.user_data.rendered}"
 }
+
+data "template_file" "htp_app" {
+    template = "${file("${path.module}/http_app.tpl")}"
+
+    vars {
+        public_ip = "${aws_instance.f5_bigip.public_ip}"
+        workload_ips = "${lookup(var.workload_ips, "ips")}"
+    }
+}
+
+provider "bigip" {
+  address = "https://${aws_instance.f5_bigip.public_ip}:8443"
+  username = "${var.f5_user}"
+  password = "${random_string.password.result}"
+}
+
+resource "bigip_ltm_node" "demo" {
+  count = 2
+  address = "${element(split(",",lookup(var.workload_ips, "ips")), count.index)}"
+  name = "/Common/${element(split(",",lookup(var.workload_ips, "ips")), count.index)}"
+}
+
+resource "bigip_ltm_pool" "demo-pool" {
+  name = "/Common/demo-app-pool"
+  load_balancing_mode = "round-robin"
+  monitors = ["http"]
+  allow_snat = "yes"
+  allow_nat = "yes"
+}
+
+resource "bigip_ltm_pool_attachment" "node-demo-pool" {
+  count = 2
+  pool = "${bigip_ltm_pool.demo-pool.name}"
+  node = "/Common/${element(split(",",lookup(var.workload_ips, "ips")), count.index)}:80"
+}
+
+resource "bigip_ltm_virtual_server" "http" {
+  name = "/Common/f5-demo-app"
+  destination = "${aws_instance.f5_bigip.private_ip}"
+  ip_protocol = "tcp"
+  port = 80
+  pool = "${bigip_ltm_pool.demo-pool.name}"
+  source_address_translation = "automap"
+  profiles = ["/Common/tcp","/Common/http"]
+  translate_address = "enabled"
+  translate_port = "enabled"
+}

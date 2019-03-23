@@ -12,4 +12,6 @@ variable "subnets" {
   type = "list"
 }
 variable "security_group" {}
-variable "workload_ips" {}
+variable "workload_ips" {
+  type = "map"
+}
