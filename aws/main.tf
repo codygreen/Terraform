@@ -38,7 +38,6 @@ module "big-ip" {
     do_rpm_url = "${var.do_rpm_url}"
     f5_count = "${var.f5_count}"
     f5_user = "${var.f5_user}"
-    f5_password = "${var.f5_password}"
     f5_instance_type = "${var.f5_instance_type}"
     key_name = "${var.key_name}"
     public_key_path = "${var.public_key_path}"
