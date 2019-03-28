@@ -13,7 +13,7 @@ data "aws_ami" "f5_ami" {
 resource "random_string" "password" {
   length = 16
   special = true
-  override_special = "/@\""
+  override_special = "@"
 }
 
 # build out EC2 instances 
@@ -55,14 +55,14 @@ resource "aws_instance" "f5_bigip" {
     user_data = "${data.template_file.user_data.rendered}"
 }
 
-# data "template_file" "htp_app" {
-#     template = "${file("${path.module}/http_app.tpl")}"
+data "template_file" "http_app" {
+    template = "${file("${path.module}/http_app.tpl")}"
 
-#     vars {
-#         public_ip = "${aws_instance.f5_bigip.public_ip}"
-#         workload_ips = "${lookup(var.workload_ips, "ips")}"
-#     }
-# }
+    vars {
+        public_ip = "${aws_instance.f5_bigip.private_ip}"
+        workload_ips = "${jsonencode(formatlist("%s", split(",", lookup(var.workload_ips, "ips"))))}"
+    }
+}
 
 # Onboard BIG-IP
 data "template_file" "do_data" {
@@ -73,10 +73,32 @@ data "template_file" "do_data" {
 resource "null_resource" "onboard" {
   provisioner "local-exec" {
     command = <<-EOF
+    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.f5_bigip.id}
+    until $(curl -k -u ${var.f5_user}:${random_string.password.result} -o /dev/null --silent --fail https://${aws_instance.f5_bigip.public_ip}:8443/mgmt/shared/declarative-onboarding/example);do sleep 10;done
     curl -k -X POST https://${aws_instance.f5_bigip.public_ip}:8443/mgmt/shared/declarative-onboarding \
+            --retry 60 \
+            --retry-connrefused \
+            --retry-delay 120 \
             -H "Content-Type: application/json" \
             -u ${var.f5_user}:${random_string.password.result} \
             -d '${data.template_file.do_data.rendered} '
+    EOF
+  }
+}
+
+# Deploy Application
+resource "null_resource" "as3" {
+  provisioner "local-exec" {
+    command = <<-EOF
+    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.f5_bigip.id}
+    until $(curl -k -u ${var.f5_user}:${random_string.password.result} -o /dev/null --silent --fail https://${aws_instance.f5_bigip.public_ip}:8443/mgmt/shared/appsvcs/info);do sleep 10;done
+    curl -k -X POST https://${aws_instance.f5_bigip.public_ip}:8443/mgmt/shared/appsvcs/declare \
+            --retry 60 \
+            --retry-connrefused \
+            --retry-delay 120 \
+            -H "Content-Type: application/json" \
+            -u ${var.f5_user}:${random_string.password.result} \
+            -d '${data.template_file.http_app.rendered} '
     EOF
   }
 }
