@@ -28,8 +28,9 @@
                     ],
                     "members": [{
                         "servicePort": 80,
-                        "serverAddresses":
-                            ${workload_ips}
+                        "addressDiscovery": "fqdn",
+                        "autoPopulate": true,
+                        "hostname": "f5-demo.f5demos.local"
                     }]
                 }
             }

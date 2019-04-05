@@ -4,22 +4,20 @@
 	"async": true,
     "Common": {
     	"class": "Tenant",
-        "hostname": "bigip.codygreen.com",
+        "hostname": "bigip.f5demos.com",
         "myDns": {
             "class": "DNS",
             "nameServers": [
-            	"8.8.8.8"
+            	"10.0.0.2"
             ],
             "search": [
-                "f5.com",
-                "test.com"
+                "f5demos.com"
             ]
         },
         "myNtp": {
             "class": "NTP",
             "servers": [
-            	"0.pool.ntp.org",
-                "1.pool.ntp.org"
+            	"169.254.169.123"
             ],
             "timezone": "UTC"
         },

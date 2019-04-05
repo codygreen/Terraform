@@ -1,16 +1,21 @@
 #--------compute/variables.tf--------
 variable "cpu" {
-    default = 512
+  default = 512
 }
+
 variable "memory" {
-    default = "1024"
+  default = "1024"
 }
+
 variable "image" {
-    default = "f5devcentral/f5-demo-httpd"
+  default = "f5devcentral/f5-demo-httpd"
 }
 
 variable "security_group" {}
+
 variable "subnet" {
-    type = "list"
+  type = "list"
 }
+
 variable "vpc" {}
+variable "dns_domain_internal" {}
