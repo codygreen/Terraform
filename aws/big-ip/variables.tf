@@ -17,3 +17,7 @@ variable "security_group" {}
 variable "app_name" {}
 variable "dns_domain_internal" {}
 variable "dns_domain_external" {}
+
+variable "app_type_https" {
+  description = "determine if we are deploying an http or https application"
+}

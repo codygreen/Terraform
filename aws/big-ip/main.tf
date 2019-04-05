@@ -57,16 +57,6 @@ resource "aws_instance" "f5_bigip" {
   user_data = "${data.template_file.user_data.rendered}"
 }
 
-data "template_file" "http_app" {
-  template = "${file("${path.module}/http_app.tpl")}"
-
-  vars {
-    public_ip = "${aws_instance.f5_bigip.private_ip}"
-
-    # workload_ips = "${jsonencode(formatlist("%s", split(",", lookup(var.workload_ips, "ips"))))}"
-  }
-}
-
 # Onboard BIG-IP
 data "template_file" "do_data" {
   template = "${file("${path.module}/single_nic_onboard.tpl")}"
@@ -90,8 +80,19 @@ resource "null_resource" "onboard" {
   }
 }
 
-# Deploy Application
+# Define HTTP application
+data "template_file" "http_app" {
+  template = "${file("${path.module}/http_app.tpl")}"
+
+  vars {
+    public_ip = "${aws_instance.f5_bigip.private_ip}"
+  }
+}
+
+# Deploy HTTP Application
 resource "null_resource" "as3" {
+  count = "${1 - var.app_type_https}"
+
   provisioner "local-exec" {
     command = <<-EOF
     aws ec2 wait instance-status-ok --instance-ids ${aws_instance.f5_bigip.id}
