@@ -19,3 +19,4 @@ variable "subnet" {
 
 variable "vpc" {}
 variable "dns_domain_internal" {}
+variable "app_name" {}

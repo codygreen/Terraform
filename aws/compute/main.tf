@@ -8,7 +8,7 @@ resource "aws_service_discovery_private_dns_namespace" "f5-demo" {
 }
 
 resource "aws_service_discovery_service" "f5-demo" {
-  name = "f5-demo"
+  name = "${var.app_name}"
 
   dns_config {
     namespace_id = "${aws_service_discovery_private_dns_namespace.f5-demo.id}"
@@ -22,12 +22,12 @@ resource "aws_service_discovery_service" "f5-demo" {
 
 #Create the Cluster
 resource "aws_ecs_cluster" "ecs-f5-demo" {
-  name = "ecs-f5-demo"
+  name = "ecs-${var.app_name}"
 }
 
 # Create Task Definition
 resource "aws_ecs_task_definition" "app" {
-  family                   = "f5-demo-app"
+  family                   = "${var.app_name}-app"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "${var.cpu}"
@@ -36,7 +36,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = <<EOF
 [
   {
-    "name": "f5-demo-app",
+    "name": "${var.app_name}-app",
     "image": "${var.image}",
     "cpu": ${var.cpu},
     "memory": ${var.memory},

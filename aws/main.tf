@@ -30,6 +30,7 @@ module "compute" {
   subnet              = "${module.networking.public_subnets}"
   vpc                 = "${module.networking.vpc}"
   dns_domain_internal = "${var.dns_domain_internal}"
+  app_name            = "${var.app_name}"
 }
 
 # Deploy BIG-IP Module
