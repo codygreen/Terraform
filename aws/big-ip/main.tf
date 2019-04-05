@@ -106,3 +106,16 @@ resource "null_resource" "as3" {
     EOF
   }
 }
+
+# Configure DNS
+data "aws_route53_zone" "f5demos-external" {
+  name = "${var.dns_domain_external}"
+}
+
+resource "aws_route53_record" "f5demos-external-app" {
+  zone_id = "${data.aws_route53_zone.f5demos-external.zone_id}"
+  name    = "${var.app_name}.${var.dns_domain_external}"
+  type    = "CNAME"
+  ttl     = "300"
+  records = ["${aws_instance.f5_bigip.public_ip}"]
+}

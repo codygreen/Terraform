@@ -14,3 +14,6 @@ variable "subnets" {
 }
 
 variable "security_group" {}
+variable "app_name" {}
+variable "dns_domain_internal" {}
+variable "dns_domain_external" {}

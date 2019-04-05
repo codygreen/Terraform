@@ -15,4 +15,5 @@ variable "do_rpm_url" {}
 variable "as3_rpm_url" {}
 variable "dns_domain_external" {}
 variable "dns_domain_internal" {}
+
 variable "app_name" {}
