@@ -82,6 +82,7 @@ resource "null_resource" "onboard" {
 
 # Define HTTP application
 data "template_file" "http_app" {
+  count    = "${1 - var.app_type_https}"
   template = "${file("${path.module}/http_app.tpl")}"
 
   vars {
@@ -104,6 +105,62 @@ resource "null_resource" "as3" {
             -H "Content-Type: application/json" \
             -u ${var.f5_user}:${random_string.password.result} \
             -d '${data.template_file.http_app.rendered} '
+    EOF
+  }
+}
+
+# Get SSL Cert for HTTPS application
+provider "acme" {
+  server_url = "https://acme-v02.api.letsencrypt.org/directory"
+}
+
+resource "tls_private_key" "private_key" {
+  algorithm = "RSA"
+}
+
+resource "acme_registration" "reg" {
+  account_key_pem = "${tls_private_key.private_key.private_key_pem}"
+  email_address   = "${var.email_address}"
+}
+
+resource "acme_certificate" "certificate" {
+  account_key_pem = "${acme_registration.reg.account_key_pem}"
+  common_name     = "${var.app_name}.${var.dns_domain_external}"
+
+  dns_challenge {
+    provider = "route53"
+  }
+}
+
+# Define HTTPS application
+data "template_file" "https_app" {
+  count    = "${var.app_type_https}"
+  template = "${file("${path.module}/https_app.tpl")}"
+
+  vars {
+    public_ip = "${aws_instance.f5_bigip.private_ip}"
+
+    cert = "${jsonencode(acme_certificate.certificate.certificate_pem)}"
+    key  = "${jsonencode(acme_certificate.certificate.private_key_pem)}"
+    ca   = "${jsonencode(acme_certificate.certificate.issuer_pem)}"
+  }
+}
+
+# Deploy HTTPS Application
+resource "null_resource" "as3_https" {
+  count = "${var.app_type_https}"
+
+  provisioner "local-exec" {
+    command = <<-EOF
+    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.f5_bigip.id}
+    until $(curl -k -u ${var.f5_user}:${random_string.password.result} -o /dev/null --silent --fail https://${aws_instance.f5_bigip.public_ip}:8443/mgmt/shared/appsvcs/info);do sleep 10;done
+    curl -k -X POST https://${aws_instance.f5_bigip.public_ip}:8443/mgmt/shared/appsvcs/declare \
+            --retry 60 \
+            --retry-connrefused \
+            --retry-delay 120 \
+            -H "Content-Type: application/json" \
+            -u ${var.f5_user}:${random_string.password.result} \
+            -d '${data.template_file.https_app.rendered} '
     EOF
   }
 }

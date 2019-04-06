@@ -21,3 +21,5 @@ variable "dns_domain_external" {}
 variable "app_type_https" {
   description = "determine if we are deploying an http or https application"
 }
+
+variable "email_address" {}

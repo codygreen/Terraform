@@ -50,4 +50,5 @@ module "big-ip" {
   dns_domain_external = "${var.dns_domain_external}"
   dns_domain_internal = "${var.dns_domain_internal}"
   app_type_https      = "${var.app_type_https}"
+  email_address       = "${var.email_address}"
 }
