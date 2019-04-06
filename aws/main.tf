@@ -19,9 +19,10 @@ module "networking" {
 }
 
 # Deploy IAM Module
-module "iam" {
-  source = "./iam"
-}
+# IAM is not needed at this time, commenting out so I can proceed with UDF lab
+# module "iam" {
+#   source = "./iam"
+# }
 
 # Deploy Compute Module
 module "compute" {
