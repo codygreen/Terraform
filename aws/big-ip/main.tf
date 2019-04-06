@@ -48,12 +48,12 @@ resource "aws_instance" "f5_bigip" {
   key_name               = "${aws_key_pair.f5_auth.id}"
   vpc_security_group_ids = ["${var.security_group}"]
   subnet_id              = "${element(var.subnets, count.index)}"
-  iam_instance_profile   = "${var.f5_profile}"
+
+  # iam_instance_profile   = "${var.f5_profile}"
 
   root_block_device {
     delete_on_termination = true
   }
-
   user_data = "${data.template_file.user_data.rendered}"
 }
 
