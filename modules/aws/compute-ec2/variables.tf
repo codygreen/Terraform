@@ -1,4 +1,5 @@
 #-------- compute/variables.tf --------
+variable "name" {}
 
 variable "vpc_cidr" {}
 
