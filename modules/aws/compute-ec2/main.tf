@@ -1,4 +1,4 @@
-#-------- compute/main.tf --------
+#-------- compute-ec2/main.tf --------
 
 # Get My Public IP
 data "http" "myIP" {
@@ -25,12 +25,12 @@ data "aws_ami" "compute" {
 }
 
 resource "aws_iam_instance_profile" "compute" {
-  name = "${var.name}_profile"
+  name = "${var.name}_compute-ec2_profile"
   role = "${aws_iam_role.role.name}"
 }
 
 resource "aws_iam_role" "role" {
-  name = "${var.name}_role"
+  name = "${var.name}__compute-ec2_role"
   path = "/"
 
   assume_role_policy = <<EOF
@@ -51,7 +51,7 @@ EOF
 }
 
 resource "aws_security_group" "compute" {
-  name        = "${var.name}_sg"
+  name        = "${var.name}_compute-ec2_sg"
   vpc_id      = "${var.vpc_id}"
   description = "demo app"
 
@@ -104,7 +104,7 @@ resource "aws_instance" "udf" {
   subnet_id              = "${var.subnet_id}"
   tags = {
     Terraform  = true
-    Name       = "${var.name}_workload-${count.index}"
+    Name       = "${var.name}_compute-ec2_${count.index}"
     ScaleGroup = "lab"
   }
 }
