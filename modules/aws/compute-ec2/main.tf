@@ -25,12 +25,12 @@ data "aws_ami" "compute" {
 }
 
 resource "aws_iam_instance_profile" "compute" {
-  name = "${name}_profile"
+  name = "${var.name}_profile"
   role = "${aws_iam_role.role.name}"
 }
 
 resource "aws_iam_role" "role" {
-  name = "${name}_role"
+  name = "${var.name}_role"
   path = "/"
 
   assume_role_policy = <<EOF
@@ -51,7 +51,7 @@ EOF
 }
 
 resource "aws_security_group" "compute" {
-  name        = "${name}_sg"
+  name        = "${var.name}_sg"
   description = "demo app"
 
   # SSH
@@ -103,7 +103,7 @@ resource "aws_instance" "udf" {
   subnet_id              = "${var.subnet_id}"
   tags = {
     Terraform  = true
-    Name       = "${name}_workload-${count.index}"
+    Name       = "${var.name}_workload-${count.index}"
     ScaleGroup = "lab"
   }
 }
