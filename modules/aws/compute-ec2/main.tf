@@ -138,7 +138,6 @@ resource "null_resource" "ansible" {
   provisioner "local-exec" {
     command = <<-EOF
     aws ec2 wait instance-status-ok --instance-ids ${element(aws_instance.udf.*.id, 0)}
-    ansible-playbook -i ./inventory ./demo_app.yaml
     EOF
   }
 }
