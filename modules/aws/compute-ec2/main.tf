@@ -52,6 +52,7 @@ EOF
 
 resource "aws_security_group" "compute" {
   name        = "${var.name}_sg"
+  vpc_id      = "${var.vpc_id}"
   description = "demo app"
 
   # SSH
