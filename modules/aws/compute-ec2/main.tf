@@ -91,7 +91,7 @@ resource "aws_security_group" "compute" {
   }
 }
 
-resource "aws_instance" "udf" {
+resource "aws_instance" "nginx" {
   ami   = "${data.aws_ami.compute.id}"
   count = "${var.instance_count}"
 
@@ -122,7 +122,7 @@ ansible_user=ubuntu
 EOF
 
   vars {
-    workload_ips = "${join("\n", aws_instance.udf.*.public_ip)}"
+    workload_ips = "${join("\n", aws_instance.nginx.*.public_ip)}"
     ssh_key      = "${var.ssh_key}"
   }
 }
@@ -137,7 +137,7 @@ resource "local_file" "save_inventory" {
 resource "null_resource" "ansible" {
   provisioner "local-exec" {
     command = <<-EOF
-    aws ec2 wait instance-status-ok --instance-ids ${element(aws_instance.udf.*.id, 0)}
+    aws ec2 wait instance-status-ok --instance-ids ${element(aws_instance.nginx.*.id, 0)}
     EOF
   }
 }
