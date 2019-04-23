@@ -8,6 +8,10 @@ variable "subnet_id" {}
 variable "key_name" {}
 variable "instance_count" {}
 
+variable "allowed_mgmt_cidrs" {
+  type = "list"
+}
+
 variable "as3_rpm_url" {
   default = "https://github.com/F5Networks/f5-appsvcs-extension/releases/download/v3.10.0/f5-appsvcs-3.10.0-5.noarch.rpm"
 }

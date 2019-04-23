@@ -40,7 +40,7 @@ resource "aws_security_group" "big-ip" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["${var.vpc_cidr}", "${chomp(data.http.myIP.body)}/32"]
+    cidr_blocks = ["${var.vpc_cidr}", "${join(",", var.allowed_mgmt_cidrs)}"]
   }
 
   # MGMT
@@ -48,7 +48,7 @@ resource "aws_security_group" "big-ip" {
     from_port   = 8443
     to_port     = 8443
     protocol    = "tcp"
-    cidr_blocks = ["${var.vpc_cidr}", "${chomp(data.http.myIP.body)}/32"]
+    cidr_blocks = ["${var.vpc_cidr}", "${join(",", var.allowed_mgmt_cidrs)}"]
   }
 
   # HTTP
